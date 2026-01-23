@@ -77,6 +77,7 @@ class Device {
     "x": "button_triangle",
     "a": "button_cross",
     "b": "button_circle",
+    "recenter": "touch_button"
   };
 
   var state = {
@@ -108,7 +109,8 @@ class Device {
     "orientation_yaw": 0x00,
     "orientation_pitch": 0x00,
     "timestamp": 0x00,
-    "battery": 0x05
+    "battery": 0x05,
+    "touch_button": 0x00
   };
 
   void setState(String btnType, int state) {
