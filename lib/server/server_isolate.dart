@@ -27,7 +27,7 @@ class ServerIsolate {
     });
 
     await Isolate.spawn(_serverIsolate, [isolateToMainStream.sendPort, server]);
-    return completer.future;
+    return completer.future as FutureOr<SendPort>;
   }
 
   static void _serverIsolate(List<dynamic> args) {

@@ -15,8 +15,8 @@ class DSUServer {
   var portNum = 26760;
   var counter = 0;
   Map<InternetAddress, int> clients = new Map();
-  List<Device> slots = [null, null, null, null];
-  UDP socket;
+  List<Device?> slots = [null, null, null, null];
+  late UDP socket;
 
   DSUServer({this.portNum = 26760});
 
@@ -87,7 +87,7 @@ class DSUServer {
 
   sendPorts(int index) {
     if (slots[index] != null) {
-      Device device = slots[index];
+      Device device = slots[index]!;
       Uint8List data = Uint8List.fromList([
         index, // pad id
         0x02, // state (connected)
@@ -282,10 +282,10 @@ class DSUServer {
     print("Start listening for incoming datagrams on " +
         socket.local.address.toString() +
         " port " +
-        socket.local.port.value.toString());
+        socket.local.port!.value.toString());
 
     socket.asStream().listen((datagram) {
-      this.incoming(datagram);
+      this.incoming(datagram!);
     });
 
     await this.reportLoop(Duration(milliseconds: 1));

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:motion_sensors/motion_sensors.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wiimote_dsu/devices/device.dart';
@@ -60,10 +62,10 @@ class WiiMoteDSUApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title, this.preferences}) : super(key: key);
+  MyHomePage({Key? key, this.title, this.preferences}) : super(key: key);
 
-  final String title;
-  final SharedPreferences preferences;
+  final String? title;
+  final SharedPreferences? preferences;
 
   @override
   _MyHomePageState createState() => _MyHomePageState();

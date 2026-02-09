@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:motion_sensors/motion_sensors.dart';
 import 'package:wiimote_dsu/models/acc_settings.dart';
 import 'package:wiimote_dsu/models/device_settings.dart';
@@ -14,7 +16,7 @@ class Device {
 
   String get deviceName => name;
 
-  SendPort serverSendPort;
+  late SendPort serverSendPort;
   var disconnected = false;
   var mac = [0xFA, 0xCE, 0xB0, 0x0C, 0x00, 0x11];
   var model = 0x01;
@@ -22,25 +24,29 @@ class Device {
   static const double PI = 3.1415926535897932;
   static const double METER_PER_SECOND_SQUARED_TO_G = 9.8066;
 
-  GyroscopeEvent previousGyroEvent;
-  GyroSettings gyroSettings;
-  AccSettings accSettings;
-  DeviceSettings deviceSettings;
+  GyroscopeEvent? previousGyroEvent;
+  late GyroSettings gyroSettings;
+  late AccSettings accSettings;
+  late DeviceSettings deviceSettings;
+
+  StreamSubscription<AccelerometerEvent>? accSubscription;
+  StreamSubscription<GyroscopeEvent>? gyroSubscription;
+  StreamSubscription<FGBGType>? fgbgSubscription;
 
   // Gyroscope specific
-  bool adjustToDeviceOrientation = false;
-  bool invertGyroX = false;
-  bool invertGyroY = false;
-  bool invertGyroZ = false;
-  double sensitivity = 1.0;
+  bool? adjustToDeviceOrientation = false;
+  bool? invertGyroX = false;
+  bool? invertGyroY = false;
+  bool? invertGyroZ = false;
+  double? sensitivity = 1.0;
 
   // Accelerometer specific
-  bool accEnabled = true;
-  bool adjustToDeviceOrientationAcc = false;
-  bool invertAccX = false;
-  bool invertAccY = false;
-  bool invertAccZ = false;
-  double accSensitivity = 1.0;
+  bool? accEnabled = true;
+  bool? adjustToDeviceOrientationAcc = false;
+  bool? invertAccX = false;
+  bool? invertAccY = false;
+  bool? invertAccZ = false;
+  double? accSensitivity = 1.0;
 
   double motionX = 0;
   double motionY = 0;
@@ -50,7 +56,7 @@ class Device {
   double accY = 0;
   double accZ = 0;
 
-  DeviceOrientation orientation = DeviceOrientation.portraitUp;
+  DeviceOrientation? orientation = DeviceOrientation.portraitUp;
   int slot = 0;
 
   var keyMap = {
@@ -114,12 +120,12 @@ class Device {
   };
 
   void setState(String btnType, int state) {
-    this.state[this.keyMap[btnType]] = state;
+    this.state[this.keyMap[btnType]!] = state;
   }
 
   void setStates(Map<String, int> btnTypeStates) {
     this.state.addAll(
-        btnTypeStates.map((key, value) => MapEntry(this.keyMap[key], value)));
+        btnTypeStates.map((key, value) => MapEntry(this.keyMap[key]!, value)));
   }
 
   Device(GyroSettings gyroSettings, AccSettings accSettings,
@@ -180,9 +186,10 @@ class Device {
   void start() {
     motionSensors.accelerometerUpdateInterval = 10000;
     motionSensors.gyroscopeUpdateInterval = 10000;
-    motionSensors.accelerometer.listen((AccelerometerEvent event) {
+    accSubscription =
+        motionSensors.accelerometer.listen((AccelerometerEvent event) {
       // Values are in m/s^2, but we need in g's (1 g approx 9.8 m/s^2)
-      if (!accEnabled) {
+      if (!accEnabled!) {
         return;
       }
 
@@ -197,14 +204,14 @@ class Device {
         accZ = meterSquaredToGs(event.x);
       }
 
-      accX *= (invertAccX ? -1 : 1) * accSensitivity;
-      accY *= (invertAccY ? -1 : 1) * accSensitivity;
-      accZ *= (invertAccZ ? -1 : 1) * accSensitivity;
+      accX *= (invertAccX! ? -1 : 1) * accSensitivity!;
+      accY *= (invertAccY! ? -1 : 1) * accSensitivity!;
+      accZ *= (invertAccZ! ? -1 : 1) * accSensitivity!;
 
       serverSendPort.send(AccEvent(slot, accX, accY, accZ));
     });
 
-    motionSensors.gyroscope.listen((GyroscopeEvent event) {
+    gyroSubscription = motionSensors.gyroscope.listen((GyroscopeEvent event) {
       // Values are in rad/s, but we need deg/s (2pi rad/s = 360 deg/s)
       // When in portrait: x = pitch, y = yaw, z = roll
       if (orientation == DeviceOrientation.portraitUp ||
@@ -218,14 +225,28 @@ class Device {
         motionZ = radToDeg(event.x);
       }
 
-      motionX *= (invertGyroX ? -1 : 1) * sensitivity;
-      motionY *= (invertGyroY ? -1 : 1) * sensitivity;
-      motionZ *= (invertGyroZ ? -1 : 1) * sensitivity;
+      motionX *= (invertGyroX! ? -1 : 1) * sensitivity!;
+      motionY *= (invertGyroY! ? -1 : 1) * sensitivity!;
+      motionZ *= (invertGyroZ! ? -1 : 1) * sensitivity!;
 
       previousGyroEvent = event;
 
       serverSendPort.send(GyroEvent(slot, motionX, motionY, motionZ));
     });
+
+    // fgbgSubscription = FGBGEvents.instance.stream.listen((event) {
+    //   switch (event) {
+    //     case FGBGType.foreground:
+    //       {
+    //         break;
+    //       }
+    //     case FGBGType.background:
+    //       {
+    // throw "Test";
+    //         break;
+    //       }
+    //   }
+    // });
   }
 
   void setAcc(AccEvent accEvent) {
